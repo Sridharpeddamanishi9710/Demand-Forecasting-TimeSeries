@@ -92,3 +92,6 @@ cd Demand-Forecasting-TimeSeries
 pip install -r requirements.txt
 streamlit run app/streamlit_app.py
 
+🌐 Live Demo
+
+  https://demand-forecasting-timeseries-sri9710.streamlit.app/

@@ -1,0 +1,2 @@
+Best_Model,Average_Actual_Demand,Average_Predicted_Demand,Recommendation
+SARIMA,360714.895,421289.76159102394,Demand is expected to increase significantly. Increase inventory and prepare additional stock.

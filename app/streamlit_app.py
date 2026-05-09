@@ -25,6 +25,7 @@ for file in required_files:
 
 df = pd.read_csv(DATA_PATH)
 df["date"] = pd.to_datetime(df["date"])
+df["sales"] = pd.to_numeric(df["sales"])
 
 results_df = pd.read_csv(RESULTS_PATH)
 business_df = pd.read_csv(BUSINESS_PATH)
@@ -77,7 +78,9 @@ elif page == "Sales Trend":
     filtered_df = df[
         (df["date"] >= pd.to_datetime(start_date)) &
         (df["date"] <= pd.to_datetime(end_date))
-    ]
+    ].copy()
+
+    filtered_df["sales"] = pd.to_numeric(filtered_df["sales"], errors="coerce")
 
     fig = px.line(
         filtered_df,
@@ -86,6 +89,8 @@ elif page == "Sales Trend":
         markers=True,
         title="Monthly Sales Trend"
     )
+
+    fig.update_traces(line=dict(width=3))
 
     fig.update_layout(
         xaxis_title="Date",

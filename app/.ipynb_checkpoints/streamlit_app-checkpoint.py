@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 import os
+import plotly.express as px
 
 st.set_page_config(
     page_title="Demand Forecasting Dashboard",
@@ -25,9 +25,12 @@ for file in required_files:
 
 df = pd.read_csv(DATA_PATH)
 df["date"] = pd.to_datetime(df["date"])
+df["sales"] = pd.to_numeric(df["sales"])
 
 results_df = pd.read_csv(RESULTS_PATH)
 business_df = pd.read_csv(BUSINESS_PATH)
+
+best_model = results_df.sort_values("MAPE").iloc[0]
 
 st.sidebar.header("Navigation")
 page = st.sidebar.radio(
@@ -47,10 +50,12 @@ page = st.sidebar.radio(
 if page == "Overview":
     st.subheader("Project Overview")
 
-    col1, col2, col3 = st.columns(3)
+    col1, col2, col3, col4 = st.columns(4)
+
     col1.metric("Total Months", len(df))
     col2.metric("Total Sales", f"{df['sales'].sum():,.0f}")
-    col3.metric("Average Monthly Sales", f"{df['sales'].mean():,.0f}")
+    col3.metric("Avg Monthly Sales", f"{df['sales'].mean():,.0f}")
+    col4.metric("Best Model", best_model["Model"])
 
     st.write("""
     This project forecasts future sales demand using time series models.
@@ -73,16 +78,27 @@ elif page == "Sales Trend":
     filtered_df = df[
         (df["date"] >= pd.to_datetime(start_date)) &
         (df["date"] <= pd.to_datetime(end_date))
-    ]
+    ].copy()
 
-    fig, ax = plt.subplots(figsize=(12, 5))
-    ax.plot(filtered_df["date"], filtered_df["sales"], marker="o")
-    ax.set_title("Monthly Sales Trend")
-    ax.set_xlabel("Date")
-    ax.set_ylabel("Sales")
-    ax.grid(True)
+    filtered_df["sales"] = pd.to_numeric(filtered_df["sales"], errors="coerce")
 
-    st.pyplot(fig)
+    fig = px.line(
+        filtered_df,
+        x="date",
+        y="sales",
+        markers=True,
+        title="Monthly Sales Trend"
+    )
+
+    fig.update_traces(line=dict(width=3))
+
+    fig.update_layout(
+        xaxis_title="Date",
+        yaxis_title="Sales",
+        template="plotly_dark"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
     st.write("""
     This trend chart helps identify sales growth, decline, and possible seasonal
@@ -96,8 +112,6 @@ elif page == "Model Comparison":
     st.subheader("Model Performance Comparison")
 
     st.dataframe(results_df)
-
-    best_model = results_df.sort_values("MAPE").iloc[0]
 
     col1, col2, col3 = st.columns(3)
     col1.metric("Best Model", best_model["Model"])
@@ -136,9 +150,9 @@ elif page == "Model Comparison":
 elif page == "Future Forecast":
     st.subheader("Future Demand Forecast")
 
-    best_model = business_df["Best_Model"].iloc[0]
+    selected_best_model = business_df["Best_Model"].iloc[0]
 
-    st.success(f"Best model selected for forecasting: {best_model}")
+    st.success(f"Best model selected for forecasting: {selected_best_model}")
 
     st.write("""
     This section represents the future demand decision layer.
@@ -146,7 +160,21 @@ elif page == "Future Forecast":
     inventory planning.
     """)
 
-    st.line_chart(df.set_index("date")["sales"])
+    fig = px.line(
+        df,
+        x="date",
+        y="sales",
+        markers=True,
+        title="Historical Sales Trend"
+    )
+
+    fig.update_layout(
+        xaxis_title="Date",
+        yaxis_title="Sales",
+        template="plotly_dark"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
     avg_sales = df["sales"].mean()
     recent_avg = df["sales"].tail(3).mean()
@@ -170,10 +198,10 @@ elif page == "Business Insights":
 
     st.dataframe(business_df)
 
-    best_model = business_df["Best_Model"].iloc[0]
+    selected_best_model = business_df["Best_Model"].iloc[0]
     recommendation = business_df["Recommendation"].iloc[0]
 
-    st.success(f"Best Model Used: {best_model}")
+    st.success(f"Best Model Used: {selected_best_model}")
 
     if "increase" in recommendation.lower():
         st.success(recommendation)
